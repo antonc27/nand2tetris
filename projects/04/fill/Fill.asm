@@ -12,3 +12,50 @@
 // the screen should remain fully clear as long as no key is pressed.
 
 // Put your code here.
+
+(START)
+	@KBD
+	D=M
+	@KBD_UNPRESSED
+	D;JEQ
+
+(KBD_PRESSED)
+	@color
+	M=-1
+	@FILL_START
+	0;JMP
+
+(KBD_UNPRESSED)
+	@color
+	M=0
+
+(FILL_START)
+
+	@SCREEN
+	D=A
+
+	@i
+	M=D
+
+(FILL_LOOP)
+	@i // if (i - (@KBD - 1))=0 goto FILL_END
+	D=M
+	@KBD // keyboard is just after screen, so we can use it as stop cond
+	D=D-A
+	D=D+1
+	@FILL_END
+	D;JGT
+
+	@color
+	D=M
+	@i // Blacken current word on the screen
+	A=M
+	M=D
+
+	@i // i++
+	M=M+1
+	@FILL_LOOP // goto FILL_LOOP
+	0;JMP
+(FILL_END) // start again
+	@START
+	0;JMP
