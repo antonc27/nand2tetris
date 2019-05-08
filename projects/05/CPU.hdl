@@ -39,5 +39,48 @@ CHIP CPU {
         pc[15];          // address of next instruction
 
     PARTS:
-    // Put your code here:
+    
+    // Instruction handling
+    Mux16(a=instruction, b=aluOut, sel=instruction[15], out=outInst); 
+
+    Not(in=instruction[15], out=loadAFromInstr); 
+    Or(a=loadAFromInstr, b=loadAFromALUOut, out=loadA); 
+
+    ARegister(in=outInst, load=loadA, out=outA, out[0..14]=addressM[0..14]); 
+
+    // ALU operation: inputs
+    DRegister(in=aluOut, load=loadDFromALUOut, out=outD); 
+
+    Mux16(a=outA, b=inM, sel=instruction[12], out=aluInputAM); 
+
+    ALU(x=outD, y=aluInputAM, zx=instruction[11], nx=instruction[10], zy=instruction[9], ny=instruction[8], f=instruction[7], no=instruction[6], out=aluOut, out=outM, zr=outZr, ng=outNg); 
+
+    // ALU operation: outputs
+    And(a=instruction[15], b=instruction[5], out=loadAFromALUOut); 
+    And(a=instruction[15], b=instruction[4], out=loadDFromALUOut); 
+    And(a=instruction[15], b=instruction[3], out=writeM); 
+
+    // Jumps
+    Not(in=outZr, out=notZr); 
+    Not(in=outNg, out=notNg); 
+
+    // jump j3 = 1, ng = 0, zr = 0 (x > 0)
+    And(a=notZr, b=notNg, out=tmp1);
+    And(a=instruction[0], b=tmp1, out=load1);
+
+    // jump j2 = 1, ng = 0, zr = 1 (x == 0)
+    And(a=outZr, b=notNg, out=tmp2);
+    And(a=instruction[1], b=tmp2, out=load2);
+
+    // jump j1 = 1, ng = 1, zr = 0 (x < 0)
+    And(a=notZr, b=outNg, out=tmp3);
+    And(a=instruction[2], b=tmp3, out=load3);
+
+    Or(a=load1, b=load2, out=loadTmp);
+    Or(a=loadTmp, b=load3, out=loadOut);
+
+    And(a=instruction[15], b=loadOut, out=loadJmp);
+
+    // Program counter
+    PC(in=outA, load=loadJmp, inc=true, reset=reset, out[0..14]=pc[0..14]); 
 }
